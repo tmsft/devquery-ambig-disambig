@@ -2,48 +2,48 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import time
+import win32gui, win32con
+
+def minimize_chrome_blocking(timeout=5):
+    start = time.time()
+    while time.time() - start < timeout:
+        def enumHandler(hwnd, lParam):
+            if win32gui.IsWindowVisible(hwnd) and "Chrome" in win32gui.GetWindowText(hwnd):
+                win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
+                raise StopIteration  # break out early
+
+        try:
+            win32gui.EnumWindows(enumHandler, None)
+        except StopIteration:
+            return  # minimized successfully
+        time.sleep(0.05)  # poll every 50ms
 
 def bing_search_headless(query, num_results=10):
     options = Options()
-    
-    # Headless but disguised as normal Chrome
-    options.add_argument("--headless=new")  # New headless mode
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument("--disable-blink-features=AutomationControlled")
-
-    # Spoof the User Agent so sites treat us like a real Chrome browser
-    options.add_argument(
-        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/115.0.5790.171 Safari/537.36"
-    )
+    options.add_argument("--log-level=3")
+    options.add_argument("--window-size=1200,800") 
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
 
     driver = webdriver.Chrome(options=options)
-
-    # Remove Selenium "automation" fingerprint
-    driver.execute_cdp_cmd(
-        "Page.addScriptToEvaluateOnNewDocument",
-        {
-            "source": """
-                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-            """
-        },
-    )
-
-    # Load Bing search page
+    # minimize_chrome_blocking() 
     driver.get(f"https://www.bing.com/search?q={query.replace(' ', '+')}&count={num_results}")
-    time.sleep(3)  # Let the page fully render
 
+    # time.sleep(0.1)
+    # minimize_chrome()   # <-- Force minimize after opening
+    
+    time.sleep(3)
     page_source = driver.page_source
     driver.quit()
 
-    # Parse results
     soup = BeautifulSoup(page_source, 'html.parser')
-
-    titles, snippets, urls, web_results = [], [], [], []
+    
+    titles = []
+    snippets = []
+    urls = []
+    web_results = []
 
     for item in soup.find_all('li', {'class': 'b_algo'})[:num_results]:
         title_tag = item.find('h2')
@@ -70,3 +70,5 @@ def bing_search_headless(query, num_results=10):
         "Top_10_Urls": "#SEP#".join(urls),
         "WebResults": web_results
     }
+
+
