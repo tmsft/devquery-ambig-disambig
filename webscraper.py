@@ -1,5 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
 import time
 # import win32gui, win32con
@@ -20,15 +21,16 @@ import time
 
 def bing_search_headless(query, num_results=10):
     options = Options()
-    options.add_argument("--headless=new") 
+    # options.add_argument("--headless=new") 
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--log-level=3")
     options.add_argument("--window-size=1200,800") 
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
-
-    driver = webdriver.Chrome(options=options)
+    options.binary_location = "/usr/bin/google-chrome"
+    service = Service("/usr/local/bin/chromedriver")
+    driver = webdriver.Chrome(service=service, options=options)
     # minimize_chrome_blocking() 
     driver.get(f"https://www.bing.com/search?q={query.replace(' ', '+')}&count={num_results}")
 
