@@ -2,25 +2,25 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import time
-import win32gui, win32con
+# import win32gui, win32con
 
-def minimize_chrome_blocking(timeout=5):
-    start = time.time()
-    while time.time() - start < timeout:
-        def enumHandler(hwnd, lParam):
-            if win32gui.IsWindowVisible(hwnd) and "Chrome" in win32gui.GetWindowText(hwnd):
-                win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
-                raise StopIteration  # break out early
+# def minimize_chrome_blocking(timeout=5):
+#     start = time.time()
+#     while time.time() - start < timeout:
+#         def enumHandler(hwnd, lParam):
+#             if win32gui.IsWindowVisible(hwnd) and "Chrome" in win32gui.GetWindowText(hwnd):
+#                 win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
+#                 raise StopIteration  # break out early
 
-        try:
-            win32gui.EnumWindows(enumHandler, None)
-        except StopIteration:
-            return  # minimized successfully
-        time.sleep(0.05)  # poll every 50ms
+#         try:
+#             win32gui.EnumWindows(enumHandler, None)
+#         except StopIteration:
+#             return  # minimized successfully
+#         time.sleep(0.05)  # poll every 50ms
 
 def bing_search_headless(query, num_results=10):
     options = Options()
-    # options.add_argument("--headless=new") 
+    options.add_argument("--headless=new") 
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
