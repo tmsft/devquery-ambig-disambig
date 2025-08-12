@@ -20,7 +20,7 @@ import time
 
 def bing_search_headless(query, num_results=10):
     options = Options()
-    options.add_argument("--headless=new") 
+    # options.add_argument("--headless=new") 
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
@@ -71,5 +71,6 @@ def bing_search_headless(query, num_results=10):
         "Top_10_Urls": "#SEP#".join(urls),
         "WebResults": web_results
     }
+
 
 
