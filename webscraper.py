@@ -3,6 +3,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
 import time
+import tempfile
+
 # import win32gui, win32con
 
 # def minimize_chrome_blocking(timeout=5):
@@ -28,6 +30,8 @@ def bing_search_headless(query, num_results=10):
     options.add_argument("--log-level=3")
     options.add_argument("--window-size=1200,800") 
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    temp_dir = tempfile.mkdtemp()
+    options.add_argument(f"--user-data-dir={temp_dir}") 
     options.binary_location = "/usr/bin/google-chrome"
     service = Service("/usr/local/bin/chromedriver")
     driver = webdriver.Chrome(service=service, options=options)
