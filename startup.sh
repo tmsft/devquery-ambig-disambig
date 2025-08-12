@@ -14,4 +14,4 @@ wget -O /tmp/chromedriver.zip "https://storage.googleapis.com/chrome-for-testing
 unzip /tmp/chromedriver.zip -d /usr/local/bin/
 
 # Run your Streamlit app
-streamlit run app.py --server.port=8000 --server.address=0.0.0.0
+exec streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
