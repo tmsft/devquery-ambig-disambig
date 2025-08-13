@@ -6,18 +6,23 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read       # required for actions/checkout
+  id-token: write      # required for azure/login@v2
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout code
       - uses: actions/checkout@v4
 
       # Login to Azure Container Registry
       - name: Log in to ACR
         uses: azure/docker-login@v1
         with:
-          login-server: ambigdisambig-d9gmfyb8hccrd4f2.azurecr.io
+          login-server: ambigdisambig-d9gmfyb8ccrd4f2.azurecr.io
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
@@ -25,27 +30,31 @@ jobs:
       - name: Build Docker image
         run: docker build -t my-selenium-streamlit:latest .
 
-      # Tag image with ACR repo
+      # Tag Docker image for ACR
       - name: Tag Docker image
-        run: docker tag my-selenium-streamlit:latest ambigdisambig-d9gmfyb8hccrd4f2.azurecr.io/my-selenium-streamlit:latest
+        run: docker tag my-selenium-streamlit:latest ambigdisambig-d9gmfyb8ccrd4f2.azurecr.io/my-selenium-streamlit:latest
 
       # Push Docker image to ACR
       - name: Push Docker image to ACR
-        run: docker push ambigdisambig-d9gmfyb8hccrd4f2.azurecr.io/my-selenium-streamlit:latest
+        run: docker push ambigdisambig-d9gmfyb8ccrd4f2.azurecr.io/my-selenium-streamlit:latest
 
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+
     steps:
+      # Login to Azure using Service Principal
       - name: Login to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
 
+      # Deploy container to Azure Web App
       - name: Deploy container to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'query-ambig-disambig'
-          images: ambigdisambig-d9gmfyb8hccrd4f2.azurecr.io/my-selenium-streamlit:latest
+          images: ambigdisambig-d9gmfyb8ccrd4f2.azurecr.io/my-selenium-streamlit:latest
