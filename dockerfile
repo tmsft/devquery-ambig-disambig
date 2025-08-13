@@ -1,55 +1,46 @@
-name: Build and deploy Docker image to Azure Web App
+FROM python:3.10-slim
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    unzip \
+    gnupg \
+    libnss3 \
+    libxi6 \
+    libxcursor1 \
+    libxcomposite1 \
+    libasound2 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
+# Install Google Chrome
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-linux-signing-keyring.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-linux-signing-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && apt-get install -y google-chrome-stable
 
-    steps:
-      - uses: actions/checkout@v4
+# Install matching ChromeDriver for the installed Chrome version
+RUN CHROME_VERSION=$(google-chrome --version | grep -oP "\d+\.\d+\.\d+") && \
+    DRIVER_VERSION=$(wget -qO- "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_${CHROME_VERSION%%.*}") && \
+    wget -O /tmp/chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/${DRIVER_VERSION}/linux64/chromedriver-linux64.zip" && \
+    unzip /tmp/chromedriver.zip -d /usr/local/bin/ && \
+    chmod +x /usr/local/bin/chromedriver-linux64/chromedriver && \
+    ln -sf /usr/local/bin/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver && \
+    rm /tmp/chromedriver.zip
 
-      # Login to Azure Container Registry
-      - name: Log in to ACR
-        uses: azure/docker-login@v1
-        with:
-          login-server: ambigdisambig-d9gmfyb8ccrd4f2.azurecr.io
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+# Set working directory
+WORKDIR /app
 
-      # Build Docker image
-      - name: Build Docker image
-        run: docker build -t my-selenium-streamlit:latest .
+# Copy and install Python dependencies
+COPY requirements.txt . 
+RUN pip install --no-cache-dir -r requirements.txt
 
-      # Tag image with ACR repo
-      - name: Tag Docker image
-        run: docker tag my-selenium-streamlit:latest ambigdisambig-d9gmfyb8ccrd4f2.azurecr.io/my-selenium-streamlit:latest
+# Copy app files
+COPY . .
 
-      # Push Docker image to ACR
-      - name: Push Docker image to ACR
-        run: docker push ambigdisambig-d9gmfyb8ccrd4f2.azurecr.io/my-selenium-streamlit:latest
+# Expose port (change if needed)
+EXPOSE 8000
 
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-
-    steps:
-      # Login to Azure using Service Principal with client secret
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-
-      # Deploy container to Azure Web App
-      - name: Deploy container to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'query-ambig-disambig'
-          images: ambigdisambig-d9gmfyb8ccrd4f2.azurecr.io/my-selenium-streamlit:latest
+# Run Streamlit app
+CMD ["streamlit", "run", "app.py", "--server.port=8000", "--server.address=0.0.0.0"]
