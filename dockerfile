@@ -6,7 +6,6 @@ RUN apt-get update && apt-get install -y \
     unzip \
     gnupg \
     libnss3 \
-    libgconf-2-4 \
     libxi6 \
     libxcursor1 \
     libxcomposite1 \
