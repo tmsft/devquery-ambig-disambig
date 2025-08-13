@@ -30,8 +30,10 @@ def bing_search_headless(query, num_results=10):
     options.add_argument("--log-level=3")
     options.add_argument("--window-size=1200,800") 
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    import shutil
+
     temp_dir = tempfile.mkdtemp()
-    options.add_argument(f"--user-data-dir={temp_dir}") 
+    options.add_argument(f"--user-data-dir={temp_dir}")
     options.binary_location = "/usr/bin/google-chrome"
     service = Service("/usr/local/bin/chromedriver")
     driver = webdriver.Chrome(service=service, options=options)
@@ -44,7 +46,7 @@ def bing_search_headless(query, num_results=10):
     time.sleep(3)
     page_source = driver.page_source
     driver.quit()
-
+    shutil.rmtree(temp_dir)
     soup = BeautifulSoup(page_source, 'html.parser')
     
     titles = []
